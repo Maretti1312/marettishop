@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Tworzymy skrypt do uruchomienia obu botów
+RUN echo '#!/bin/bash\npython customer_bot.py &\npython admin_bot.py &\nwait' > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
