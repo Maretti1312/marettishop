@@ -4,7 +4,6 @@ Główny plik uruchamiający oba boty jednocześnie
 """
 import logging
 import asyncio
-from threading import Thread
 from customer_bot import main as customer_main
 from admin_bot import main as admin_main
 from keep_alive import keep_alive
@@ -16,23 +15,36 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-async def run_both_bots():
-    logger.info("🚀 Uruchamianie obu botów...")
+def run_customer_bot():
+    """Uruchamia bota klienta w osobnym procesie"""
+    try:
+        logger.info("🚀 Uruchamianie bota klienta...")
+        customer_main()
+    except Exception as e:
+        logger.error(f"❌ Błąd bota klienta: {e}")
+
+def run_admin_bot():
+    """Uruchamia bota admina w osobnym procesie"""
+    try:
+        logger.info("🚀 Uruchamianie bota admina...")
+        admin_main()
+    except Exception as e:
+        logger.error(f"❌ Błąd bota admina: {e}")
+
+if __name__ == '__main__':
+    import threading
+    
+    logger.info("🚀 Uruchamianie systemu botów...")
     
     # Uruchom serwer HTTP w osobnym wątku (dla Render.com)
     keep_alive()
     logger.info("✅ Serwer HTTP uruchomiony na porcie 8080")
     
-    # Uruchom oba boty asynchronicznie
-    customer_task = asyncio.create_task(asyncio.to_thread(customer_main))
-    admin_task = asyncio.create_task(asyncio.to_thread(admin_main))
+    # Uruchom bota klienta w osobnym wątku
+    customer_thread = threading.Thread(target=run_customer_bot, daemon=True)
+    customer_thread.start()
+    logger.info("✅ Bot klienta uruchomiony w wątku")
     
-    logger.info("✅ Oba boty uruchomione!")
-    
-    await asyncio.gather(customer_task, admin_task)
-
-if __name__ == '__main__':
-    try:
-        asyncio.run(run_both_bots())
-    except KeyboardInterrupt:
-        logger.info("⛔ Zatrzymano boty")
+    # Uruchom bota admina w głównym wątku
+    logger.info("✅ Uruchamianie bota admina w głównym wątku...")
+    run_admin_bot()
